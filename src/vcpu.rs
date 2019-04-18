@@ -1,8 +1,8 @@
 // Copyright 2018-2019 CrowdStrike, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0 or MIT
 //
 // Portions Copyright 2018 Cloudbase Solutions Srl
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0 or MIT
 //
 // Portions Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0 OR MIT
@@ -15,31 +15,14 @@
 
 use std::{io, result};
 
-///
-/// Generic types used in the virtual CPU trait definition and exported for
-/// public consumption.
-///
-/// These types use kvm_bindings under the hood, as they are not necessarily KVM-
-/// specific, but rather generic x86/x86/ARM structures.  Generic naming makes
-/// them more intuitive for consumption by non-KVM VMMs.
-///
 #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-pub use arm::{VcpuInit};
+pub use arm::VcpuInit;
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub use x86_64::{
-    DescriptorTable, FpuState, MsrEntries, MsrEntry, SegmentRegister, SpecialRegisters,
-    StandardRegisters,
+    StandardRegisters, SpecialRegisters, FpuState, MsrEntries, MsrEntry, 
+    CpuId, LapicState
 };
-
-///
-/// Generic types used in the virtual CPU trait definition and exported for
-/// public consumption.
-///
-/// These types are explicitly defined in x86_64
-///
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-pub use x86_64::{CpuId, LapicState};
 
 ///
 /// Reasons for vCPU exits.
@@ -54,7 +37,6 @@ pub enum VcpuExit<'a> {
     UnrecoverableException,
     InvalidVpRegisterValue,
     UnsupportedFeature,
-    InterruptWindow,
     MsrAccess,
     Cpuid,
     Canceled,
@@ -75,7 +57,6 @@ pub enum VcpuExit<'a> {
     Unknown,
     Hypercall,
     Debug,
-    IrqWindowOpen,
     Shutdown,
     FailEntry,
     Intr,
@@ -99,6 +80,7 @@ pub enum VcpuExit<'a> {
     Hlt,
     IoapicEoi,
     Exception,
+    IrqWindowOpen,
 }
 
 pub type Result<T> = result::Result<T, io::Error>;

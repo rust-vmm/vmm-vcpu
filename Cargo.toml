@@ -4,8 +4,18 @@ version = "0.1.0"
 authors = ["Jenny Mankin <jenny.mankin@crowdstrike.com>", 
            "Timo Kreuzer <timo.kreuzer@reactos.org>",
            "Alessandro Pilotti <apilotti@cloudbasesolutions.com>"]
+description = "Hypervisor-agnostic abstraction crate over virtual CPU functionality"
+repository = "https://github.com/rust-vmm/vmm-vcpu"
+readme = "README.md"
+license = "Apache-2.0 or MIT"
            
 [dependencies]
 byteorder = "*"
+
+[target.'cfg(unix)'.dependencies]
 kvm-bindings = "0.1"
+
+[target.'cfg(unix)'.dev-dependencies]
+kvm-ioctls = "0.1.0"
+
 libc = ">=0.2.39"
