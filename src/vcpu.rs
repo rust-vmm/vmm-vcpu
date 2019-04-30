@@ -25,64 +25,118 @@ pub use x86_64::{
 };
 
 ///
-/// Reasons for vCPU exits.
-///
-/// Exit reasons are drawn a superset of exit reasons for various VMMs.
+/// Reasons for vCPU exits for Windows (Hyper-V) platforms
 ///
 #[derive(Debug)]
-pub enum VcpuExit<'a> {
-    None,
-    MemoryAccess,
-    IoPortAccess,
-    UnrecoverableException,
-    InvalidVpRegisterValue,
-    UnsupportedFeature,
-    MsrAccess,
-    Cpuid,
-    Canceled,
+#[cfg(windows)]
+pub enum VcpuExit {
 
+    /// Corresponds to WHvRunVpExitReasonNone
+    None,
+    /// Corresponds to WHvRunVpExitReasonMemoryAccess
+    MemoryAccess,
+    /// Corresponds to WHvRunVpExitReasonX64IoPortAccess
+    IoPortAccess,
+    /// Corresponds to WHvRunVpExitReasonUnrecoverableException
+    UnrecoverableException,
+    /// Corresponds to WHvRunVpExitReasonInvalidVpRegisterValue
+    InvalidVpRegisterValue,
+    /// Corresponds to WHvRunVpExitReasonUnsupportedFeature
+    UnsupportedFeature,
+    /// Corresponds to WHvRunVpExitReasonX64InterruptWindow
+    IrqWindowOpen,
+    /// Corresponds to  WHvRunVpExitReasonX64Halt
+    Hlt,
+    /// Corresponds to WHvRunVpExitReasonX64ApicEoi
+    IoapicEoi,
+    /// Corresponds to WHvRunVpExitReasonX64MsrAccess
+    MsrAccess,
+    /// Corresponds to WHvRunVpExitReasonX64Cpuid
+    Cpuid,
+    /// Corresponds to WHvRunVpExitReasonException
+    Exception,
+    /// Corresponds to WHvRunVpExitReasonCanceled
+    Canceled,
+}
+
+///
+/// Reasons for vCPU exits for Unix-based (KVM) platforms
+///
+#[derive(Debug)]
+#[cfg(unix)]
+pub enum VcpuExit<'a> {
+    /// Corresponds to KVM_EXIT_UNKNOWN.
+    Unknown,
+    /// Corresponds to KVM_EXIT_EXCEPTION.
+    Exception,
     /// An out port instruction was run on the given port with the given data.
     IoOut(u16 /* port */, &'a [u8] /* data */),
     /// An in port instruction was run on the given port.
     ///
-    /// The given slice should be filled in before Vcpu::run() is called again.
+    /// The given slice should be filled in before [run()](struct.VcpuFd.html#method.run)
+    /// is called again.
     IoIn(u16 /* port */, &'a mut [u8] /* data */),
+    /// Corresponds to KVM_EXIT_HYPERCALL.
+    Hypercall,
+    /// Corresponds to KVM_EXIT_DEBUG.
+    Debug,
+    /// Corresponds to KVM_EXIT_HLT.
+    Hlt,
     /// A read instruction was run against the given MMIO address.
     ///
-    /// The given slice should be filled in before Vcpu::run() is called again.
+    /// The given slice should be filled in before [run()](struct.VcpuFd.html#method.run)
     /// is called again.
     MmioRead(u64 /* address */, &'a mut [u8]),
     /// A write instruction was run against the given MMIO address with the given data.
     MmioWrite(u64 /* address */, &'a [u8]),
-    Unknown,
-    Hypercall,
-    Debug,
-    Shutdown,
-    FailEntry,
-    Intr,
-    SetTpr,
-    TprAccess,
-    S390Sieic,
-    S390Reset,
-    Dcr,
-    Nmi,
-    InternalError,
-    Osi,
-    PaprHcall,
-    S390Ucontrol,
-    Watchdog,
-    S390Tsch,
-    Epr,
-    SystemEvent,
-    S390Stsi,
-    Hyperv,
-
-    Hlt,
-    IoapicEoi,
-    Exception,
+    /// Corresponds to KVM_EXIT_IRQ_WINDOW_OPEN.
     IrqWindowOpen,
+    /// Corresponds to KVM_EXIT_SHUTDOWN.
+    Shutdown,
+    /// Corresponds to KVM_EXIT_FAIL_ENTRY.
+    FailEntry,
+    /// Corresponds to KVM_EXIT_INTR.
+    Intr,
+    /// Corresponds to KVM_EXIT_SET_TPR.
+    SetTpr,
+    /// Corresponds to KVM_EXIT_TPR_ACCESS.
+    TprAccess,
+    /// Corresponds to KVM_EXIT_S390_SIEIC.
+    S390Sieic,
+    /// Corresponds to KVM_EXIT_S390_RESET.
+    S390Reset,
+    /// Corresponds to KVM_EXIT_DCR.
+    Dcr,
+    /// Corresponds to KVM_EXIT_NMI.
+    Nmi,
+    /// Corresponds to KVM_EXIT_INTERNAL_ERROR.
+    InternalError,
+    /// Corresponds to KVM_EXIT_OSI.
+    Osi,
+    /// Corresponds to KVM_EXIT_PAPR_HCALL.
+    PaprHcall,
+    /// Corresponds to KVM_EXIT_S390_UCONTROL.
+    S390Ucontrol,
+    /// Corresponds to KVM_EXIT_WATCHDOG.
+    Watchdog,
+    /// Corresponds to KVM_EXIT_S390_TSCH.
+    S390Tsch,
+    /// Corresponds to KVM_EXIT_EPR.
+    Epr,
+    /// Corresponds to KVM_EXIT_SYSTEM_EVENT.
+    SystemEvent,
+    /// Corresponds to KVM_EXIT_S390_STSI.
+    S390Stsi,
+    /// Corresponds to KVM_EXIT_IOAPIC_EOI.
+    IoapicEoi,
+    /// Corresponds to KVM_EXIT_HYPERV.
+    Hyperv,
 }
 
+/// A specialized `Result` type for VCPU operations
+///
+/// This typedef is generally used to avoid writing out io::Error directly and
+/// is otherwise a direct mapping to Result.
 pub type Result<T> = result::Result<T, io::Error>;
 
 ///
@@ -92,6 +146,7 @@ pub type Result<T> = result::Result<T, io::Error>;
 /// functionality
 ///
 pub trait Vcpu {
+    /// Associated type representing the run context on a vCPU exit
     type RunContextType;
 
     /// Reads the standard registers from the virtual CPU
@@ -137,7 +192,7 @@ pub trait Vcpu {
     /// Reads the floating point state from the vCPU
     ///
     /// - Floating Point MMX Registers 0-7
-    /// - Floating Pointer Control, Status, Tag Registers (FCW, FSW, FTW)
+    /// - Floating Point Control, Status, Tag Registers (FCW, FSW, FTW)
     /// - Floating point exception state (Last FIP, FOP, FCS, FDS, FDP)
     /// - XMM Registers 0-15
     /// - MXCSR Control and Status Register

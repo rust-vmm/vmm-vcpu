@@ -12,13 +12,183 @@
 // found in the THIRD-PARTY file.
 
 ///
+/// Standard registers (general purpose plus instruction pointer and flags)
+///
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
+pub struct StandardRegisters {
+    /// RAX general purpose register
+    pub rax: u64,
+    /// RBX general purpose register
+    pub rbx: u64,
+    /// RCX general purpose register
+    pub rcx: u64,
+    /// RDX general purpose register
+    pub rdx: u64,
+    /// Source index general purpose register
+    pub rsi: u64,
+    /// Destination index general purpose register
+    pub rdi: u64,
+    /// Stack Pointer register
+    pub rsp: u64,
+    /// Base Pointer register
+    pub rbp: u64,
+    /// R8 general purpose register
+    pub r8: u64,
+    /// R9 general purpose register
+    pub r9: u64,
+    /// R10 general purpose register
+    pub r10: u64,
+    /// R11 general purpose register
+    pub r11: u64,
+    /// R12 general purpose register
+    pub r12: u64,
+    /// R13 general purpose register
+    pub r13: u64,
+    /// R14 general purpose register
+    pub r14: u64,
+    /// R15 general purpose register
+    pub r15: u64,
+    /// Instruction Pointer register
+    pub rip: u64,
+    /// RFLAGS register
+    pub rflags: u64,
+}
+
+///
+/// Special registers (segment, task, descriptor table, control, and additional
+/// registers, plus the interrupt bitmap)
+///
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
+pub struct SpecialRegisters {
+    /// Code Segment register
+    pub cs: SegmentRegister,
+    /// Data Segment register
+    pub ds: SegmentRegister,
+    /// Extra Segment register
+    pub es: SegmentRegister,
+    /// Additional segment register
+    pub fs: SegmentRegister,
+    /// Additional segment register
+    pub gs: SegmentRegister,
+    /// Stack Segment register
+    pub ss: SegmentRegister,
+    /// Task register
+    pub tr: SegmentRegister,
+    /// Local Descriptor Table register
+    pub ldt: SegmentRegister,
+    /// Global Descriptor Table register
+    pub gdt: DescriptorTable,
+    /// Interrupt Descriptor Table register
+    pub idt: DescriptorTable,
+    /// Control Register 0
+    pub cr0: u64,
+    /// Control Register 2
+    pub cr2: u64,
+    /// Control Register 3
+    pub cr3: u64,
+    /// Control Register 4
+    pub cr4: u64,
+    /// Control Register 8
+    pub cr8: u64,
+    /// Extended Feature Enable register
+    pub efer: u64,
+    /// APIC base register
+    pub apic_base: u64,
+    /// Bitmap of external interrupts (unused)
+    pub interrupt_bitmap: [u64; 4usize],
+}
+
+///
+/// Segment register (used for CS, DS, ES, FS, GS, SS)
+///
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
+pub struct SegmentRegister {
+    /// Starting memory address of the segment
+    pub base: u64,
+    /// Length of the segment
+    pub limit: u32,
+    /// Offset of a descriptor table entry
+    pub selector: u16,
+    /// Segment type
+    pub type_: u8,
+    /// Present
+    pub present: u8,
+    /// Descriptor privilege level
+    pub dpl: u8,
+    /// Default (set to 0 when Long set)
+    pub db: u8,
+    /// System-segment field
+    pub s: u8,
+    /// Long field
+    pub l: u8,
+    /// Granularity field
+    pub g: u8,
+    /// Available
+    pub avl: u8,
+    /// Unused
+    pub unusable: u8,
+    /// Padding
+    pub padding: u8,
+}
+
+///
+/// Descriptor Table
+///
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
+pub struct DescriptorTable {
+    /// Base address
+    pub base: u64,
+    /// Limit (size of table in bytes)
+    pub limit: u16,
+    /// Padding
+    pub padding: [u16; 3usize],
+}
+
+///
+/// Floating Point Unit State
+///
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
+pub struct FpuState {
+    /// Floating point registers
+    pub fpr: [[u8; 16usize]; 8usize],
+    /// Floating Point Control register
+    pub fcw: u16,
+    /// Floating Point Status register
+    pub fsw: u16,
+    /// Floating Point Tag register
+    pub ftwx: u8,
+    /// Padding
+    pub pad1: u8,
+    /// Floating point exception state - last opcode
+    pub last_opcode: u16,
+    /// Floating point exception state - last instruction pointer
+    pub last_ip: u64,
+    /// Floating point exception state - last data pointer
+    pub last_dp: u64,
+    /// SSE registers
+    pub xmm: [[u8; 16usize]; 16usize],
+    /// Media control and status register
+    pub mxcsr: u32,
+    /// Padding
+    pub pad2: u32,
+}
+
+///
 /// Single MSR to be read/written
 ///
 #[repr(C)]
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct MsrEntry {
+    /// MSR address index
     pub index: u32,
+    /// Reserved
     pub reserved: u32,
+    /// MSR data
     pub data: u64,
 }
 
@@ -28,113 +198,12 @@ pub struct MsrEntry {
 #[repr(C)]
 #[derive(Debug, Default)]
 pub struct MsrEntries {
+    /// Number of MSR entries in array
     pub nmsrs: u32,
+    /// Padding
     pub pad: u32,
+    /// Array of MSR entries
     pub entries: __IncompleteArrayField<MsrEntry>,
-}
-
-///
-/// Standard registers (general purpose plus instruction pointer and flags)
-///
-#[repr(C)]
-#[derive(Debug, Default)]
-pub struct StandardRegisters {
-    pub rax: u64,
-    pub rbx: u64,
-    pub rcx: u64,
-    pub rdx: u64,
-    pub rsi: u64,
-    pub rdi: u64,
-    pub rsp: u64,
-    pub rbp: u64,
-    pub r8: u64,
-    pub r9: u64,
-    pub r10: u64,
-    pub r11: u64,
-    pub r12: u64,
-    pub r13: u64,
-    pub r14: u64,
-    pub r15: u64,
-    pub rip: u64,
-    pub rflags: u64,
-}
-
-///
-/// Special registers (segment, task, descriptor table, control, and additional
-/// registers, plus the interrupt bitmap)
-///
-#[repr(C)]
-#[derive(Debug, Default)]
-pub struct SpecialRegisters {
-    pub cs: SegmentRegister,
-    pub ds: SegmentRegister,
-    pub es: SegmentRegister,
-    pub fs: SegmentRegister,
-    pub gs: SegmentRegister,
-    pub ss: SegmentRegister,
-    pub tr: SegmentRegister,
-    pub ldt: SegmentRegister,
-    pub gdt: DescriptorTable,
-    pub idt: DescriptorTable,
-    pub cr0: u64,
-    pub cr2: u64,
-    pub cr3: u64,
-    pub cr4: u64,
-    pub cr8: u64,
-    pub efer: u64,
-    pub apic_base: u64,
-    pub interrupt_bitmap: [u64; 4usize],
-}
-
-///
-/// Segment register (used for CS, DS, ES, FS, GS, SS)
-///
-#[repr(C)]
-#[derive(Debug, Default)]
-pub struct SegmentRegister {
-    pub base: u64,
-    pub limit: u32,
-    pub selector: u16,
-    pub type_: u8,
-    pub present: u8,
-    pub dpl: u8,
-    pub db: u8,
-    pub s: u8,
-    pub l: u8,
-    pub g: u8,
-    pub avl: u8,
-    pub unusable: u8,
-    pub padding: u8,
-}
-
-///
-/// Descriptor Table
-///
-#[repr(C)]
-#[derive(Debug, Default)]
-pub struct DescriptorTable {
-    pub base: u64,
-    pub limit: u16,
-    pub padding: [u16; 3usize],
-}
-
-///
-/// Floating Point Unit State
-///
-#[repr(C)]
-#[derive(Debug, Default)]
-pub struct FpuState {
-    pub fpr: [[u8; 16usize]; 8usize],
-    pub fcw: u16,
-    pub fsw: u16,
-    pub ftwx: u8,
-    pub pad1: u8,
-    pub last_opcode: u16,
-    pub last_ip: u64,
-    pub last_dp: u64,
-    pub xmm: [[u8; 16usize]; 16usize],
-    pub mxcsr: u32,
-    pub pad2: u32,
 }
 
 ///
@@ -144,13 +213,24 @@ pub struct FpuState {
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct CpuIdEntry2 {
+    /// The EAX value used to obtain the entry
     pub function: u32,
+    /// The ECX value used to obtain the entry (if affected)
     pub index: u32,
+    /// An OR of zero or more of the following:
+    /// - The index field is valid
+    /// - CPUID for this function returns different values for successive invocations
+    /// - Set if this entry is the first entry to be read by a CPU
     pub flags: u32,
+    /// Value returned in EAX by CPUID for this function/index combination
     pub eax: u32,
+    /// Value returned in EBX by CPUID for this function/index combination
     pub ebx: u32,
+    /// Value returned in ECX by CPUID for this function/index combination
     pub ecx: u32,
+    /// Value returned in EDX by CPUID for this function/index combination
     pub edx: u32,
+    /// Padding
     pub padding: [u32; 3usize],
 }
 
@@ -160,8 +240,11 @@ pub struct CpuIdEntry2 {
 #[repr(C)]
 #[derive(Debug, Default)]
 pub struct CpuId2 {
+    /// Number of entries
     pub nent: u32,
+    /// Padding
     pub padding: u32,
+    /// Array of entries
     pub entries: __IncompleteArrayField<CpuIdEntry2>,
 }
 
@@ -172,6 +255,7 @@ pub struct CpuId2 {
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct LapicState {
+    /// Set of all registers that describe the Local APIC state
     pub regs: [::std::os::raw::c_char; 4096usize],
 }
 
@@ -189,26 +273,33 @@ impl ::std::fmt::Debug for LapicState {
 
 #[repr(C)]
 #[derive(Default)]
+/// Zero-sized array
 pub struct __IncompleteArrayField<T>(::std::marker::PhantomData<T>, [T; 0]);
 
 impl<T> __IncompleteArrayField<T> {
     #[inline]
+    /// Creates a new `__IncompleteArrayField` structure
     pub fn new() -> Self {
         __IncompleteArrayField(::std::marker::PhantomData, [])
     }
     #[inline]
+    /// Get a pointer. Using this pointer is unsafe.
     pub unsafe fn as_ptr(&self) -> *const T {
         ::std::mem::transmute(self)
     }
     #[inline]
+    /// Get a mutable pointer. Using this pointer is unsafe.
     pub unsafe fn as_mut_ptr(&mut self) -> *mut T {
         ::std::mem::transmute(self)
     }
     #[inline]
+    /// Extracts a slice ontaining the entire array. Using this slice is unsafe.
     pub unsafe fn as_slice(&self, len: usize) -> &[T] {
         ::std::slice::from_raw_parts(self.as_ptr(), len)
     }
     #[inline]
+    /// Extacts a mutable slice containing the entire array. Using this slice
+    /// is unsafe.
     pub unsafe fn as_mut_slice(&mut self, len: usize) -> &mut [T] {
         ::std::slice::from_raw_parts_mut(self.as_mut_ptr(), len)
     }
